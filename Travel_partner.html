@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Travel Companion with Google Maps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 50%, #667eea 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .fade-in {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        .info-window {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="text-gray-900">
+    <header class="hero-bg text-white py-20 px-4 fade-in" style="background-image: url('img/travel.jpg'), linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)); background-size: cover; background-position: center; background-blend-mode: multiply;">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">Live Travel Companion</h1>
+            <p class="text-xl md:text-2xl mb-8 leading-relaxed">Navigate with live Google Maps, get real-time recommendations for fuel, food, lodging, and weather alerts along your route.</p>
+            <div class="inline-flex">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8ee85874-0bed-4ed0-880b-c147d5a5a615.png" alt="Interactive map interface displaying highways, cities, and travel paths with icons for fuel pumps, restaurants, beds, and weather symbols, vibrant and detailed digital illustration" class="rounded-xl shadow-2xl max-w-full h-auto" />
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6 fade-in">
+        <section class="bg-white rounded-2xl shadow-2xl p-12 mb-12 card-hover">
+            <h2 class="text-4xl font-bold text-center mb-12">Plan Your Live Route</h2>
+            <form id="routeForm" class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="form-group">
+                    <label for="start" class="block text-lg font-semibold text-gray-700 mb-3">Starting Point</label>
+                    <input type="text" id="start" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition" placeholder="e.g., New York, NY" required>
+                </div>
+                <div class="form-group">
+                    <label for="end" class="block text-lg font-semibold text-gray-700 mb-3">Destination</label>
+                    <input type="text" id="end" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition" placeholder="e.g., Los Angeles, CA" required>
+                </div>
+                <div class="form-group">
+                    <label for="travelDate" class="block text-lg font-semibold text-gray-700 mb-3">Travel Date</label>
+                    <input type="date" id="travelDate" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition" required>
+                </div>
+                <div class="form-group">
+                    <label for="preference" class="block text-lg font-semibold text-gray-700 mb-3">Focus</label>
+                    <select id="preference" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+                        <option value="balanced">Balanced View</option>
+                        <option value="fuel">Fuel Stations</option>
+                        <option value="food">Food Spots</option>
+                        <option value="lodging">Lodging</option>
+                    </select>
+                </div>
+                <div class="md:col-span-4 mt-8">
+                    <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white text-xl font-bold py-4 px-12 rounded-lg transition duration-300 transform hover:scale-105 w-full md:w-auto">Show Live Route & Recommendations</button>
+                </div>
+            </form>
+        </section>
+
+        <div id="map" class="mb-12"></div>
+
+        <section id="recommendations" class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12" style="display: none;">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 card-hover">
+                <h3 class="text-3xl font-bold mb-8 text-center flex items-center justify-center">
+                    Fuel Stations
+                </h3>
+                <ul id="fuelList" class="text-gray-700"></ul>
+            </div>
+            <div class="bg-white rounded-2xl shadow-2xl p-8 card-hover">
+                <h3 class="text-3xl font-bold mb-8 text-center flex items-center justify-center">
+                    Food Spots
+                </h3>
+                <ul id="foodList" class="text-gray-700"></ul>
+            </div>
+            <div class="bg-white rounded-2xl shadow-2xl p-8 card-hover">
+                <h3 class="text-3xl font-bold mb-8 text-center flex items-center justify-center">
+                    Lodging
+                </h3>
+                <ul id="lodgingList" class="text-gray-700"></ul>
+            </div>
+            <div class="bg-white rounded-2xl shadow-2xl p-8 card-hover">
+                <h3 class="text-3xl font-bold mb-8 text-center flex items-center justify-center">
+                    Weather Alerts
+                </h3>
+                <ul id="weatherList" class="text-gray-700"></ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-12 px-6">
+        <div class="max-w-6xl mx-auto text-center">
+            <h4 class="text-2xl font-bold mb-4">Travel Live with Google Maps</h4>
+            <p class="text-lg mb-6">Real-time route insights for a safer journey.</p>
+            <div class="text-sm">
+                <p>© 2023 Live Travel Companion. All rights reserved.</p>
+                <p>Powered by Google Maps API and OpenWeatherMap.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let map, directionsService, directionsRenderer, placesService;
+        let markers = [];
+        const weatherAPIKey = 'YOUR_OPENWEATHERMAP_API_KEY';  // Replace with your actual key
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 39.8283, lng: -98.5795 }, // Center of USA
+                zoom: 4,
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true });
+            placesService = new google.maps.places.PlacesService(map);
+        }
+
+        function clearMarkers() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+        }
+
+        function addMarker(position, title, iconUrl, content) {
+            const marker = new google.maps.Marker({
+                position,
+                map,
+                title,
+                icon: iconUrl,
+            });
+            if (content) {
+                const infowindow = new google.maps.InfoWindow({ content });
+                marker.addListener("click", () => infowindow.open(map, marker));
+            }
+            markers.push(marker);
+        }
+
+        function searchPlacesAlongRoute(route, type, listId) {
+            const listElement = document.getElementById(listId);
+            listElement.innerHTML = '';
+
+            const path = route.overview_path;
+            const sampleDistanceMeters = 50000; // 50 km
+            let accumulatedDistance = 0;
+            let lastPoint = path[0];
+            const sampledPoints = [lastPoint];
+
+            for (let i = 1; i < path.length; i++) {
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(lastPoint, path[i]);
+                accumulatedDistance += dist;
+                if (accumulatedDistance >= sampleDistanceMeters) {
+                    sampledPoints.push(path[i]);
+                    accumulatedDistance = 0;
+                    lastPoint = path[i];
+                }
+            }
+
+            sampledPoints.forEach((point, idx) => {
+                const request = {
+                    location: point,
+                    radius: 15000,
+                    type: type,
+                };
+                placesService.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+                        results.slice(0, 3).forEach(place => {
+                            addMarker(place.geometry.location, place.name, null, `<div class="info-window"><strong>${place.name}</strong><br>${place.vicinity || ''}</div>`);
+                            const li = document.createElement('li');
+                            li.textContent = `${place.name} - ${place.vicinity || ''}`;
+                            listElement.appendChild(li);
+                        });
+                    }
+                });
+            });
+        }
+
+        async function fetchWeather(lat, lng) {
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=imperial&appid=${weatherAPIKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return data;
+            } catch (e) {
+                console.error(e);
+                return null;
+            }
+        }
+
+        async function showWeatherAlongRoute(route, listId) {
+            const listElement = document.getElementById(listId);
+            listElement.innerHTML = '';
+
+            const path = route.overview_path;
+            const sampleDistanceMeters = 100000; // 100 km
+            let accumulatedDistance = 0;
+            let lastPoint = path[0];
+            const sampledPoints = [lastPoint];
+
+            for (let i = 1; i < path.length; i++) {
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(lastPoint, path[i]);
+                accumulatedDistance += dist;
+                if (accumulatedDistance >= sampleDistanceMeters) {
+                    sampledPoints.push(path[i]);
+                    accumulatedDistance = 0;
+                    lastPoint = path[i];
+                }
+            }
+
+            for (const [idx, point] of sampledPoints.entries()) {
+                const weather = await fetchWeather(point.lat(), point.lng());
+                if (weather) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>Point ${idx + 1}:</strong> ${weather.weather[0].main} (${weather.weather[0].description}), Temp: ${weather.main.temp}°F, Wind: ${weather.wind.speed} mph`;
+                    listElement.appendChild(li);
+                }
+            }
+        }
+
+        document.getElementById('routeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            clearMarkers();
+
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+            const travelDate = document.getElementById('travelDate').value;
+            const preference = document.getElementById('preference').value;
+
+            if (!start || !end || !travelDate) {
+                alert('Please fill all required fields.');
+                return;
+            }
+
+            directionsService.route({
+                origin: start,
+                destination: end,
+                travelMode: google.maps.TravelMode.DRIVING,
+            }, async (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result);
+                    const route = result.routes[0];
+
+                    addMarker(route.legs[0].start_location, 'Start: ' + start, 'http://maps.google.com/mapfiles/ms/icons/green-dot.png');
+                    addMarker(route.legs[0].end_location, 'End: ' + end, 'http://maps.google.com/mapfiles/ms/icons/red-dot.png');
+
+                    document.getElementById('recommendations').style.display = 'grid';
+
+                    if (preference === 'fuel' || preference === 'balanced') {
+                        searchPlacesAlongRoute(route, 'gas_station', 'fuelList');
+                    }
+                    if (preference === 'food' || preference === 'balanced') {
+                        searchPlacesAlongRoute(route, 'restaurant', 'foodList');
+                    }
+                    if (preference === 'lodging' || preference === 'balanced') {
+                        searchPlacesAlongRoute(route, 'lodging', 'lodgingList');
+                    }
+
+                    await showWeatherAlongRoute(route, 'weatherList');
+                } else {
+                    alert('Could not display directions due to: ' + status);
+                }
+            });
+        });
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCKgrDzVxEHu1CRWQ8l0EoF76twA_Wuttw&libraries=places,geometry&callback=initMap" async defer></script>
+</body>
+</html>
+</content>
+</create_file>
